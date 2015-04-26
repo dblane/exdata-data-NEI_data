@@ -2,23 +2,26 @@
 NEI <- readRDS("summarySCC_PM25.rds")
 SCC <- readRDS("Source_Classification_Code.rds")
 
-## Aggregate emission data for Baltimore City
-baltimorePM <- NEI[NEI$fips=="24510",]
-totals <- aggregate(Emissions ~ year, baltimorePM, sum)
+## Aggregate coal combustion data for US. 
+## We are pulling info from Level One and Level Four
+comb <- grepl("comb", SCC$SCC.Level.One, ignore.case=TRUE)
+coal <- grepl("coal", SCC$SCC.Level.Four, ignore.case=TRUE) 
+coalcomb <- (comb & coal)
+combSCC <- SCC[coalcomb,]$SCC
+combNEI <- NEI[NEI$SCC %in% combSCC,]
 
 
-## We have to plot 4 different source types to see which of the 4 decreased from 1999-2008
-## We'll have to use ggplot2 in order to represent this data best.
+## Plot using ggplot2
 library(ggplot2)
-plot <- ggplot(baltimorePM,aes(factor(year),Emissions,fill=type)) +
-        geom_bar(stat="identity") +
-        theme_bw() + guides(fill=FALSE) +
-        facet_grid(.~type,scales = "free",space="free") + 
-        labs(x="year", y=expression("Total PM 2.5 Emission (Tons)")) + 
-        labs(title=expression("PM"[2.5]*" Emissions, Baltimore City 1999-2008 by Source Type"))
+
+plot <- ggplot(combNEI,aes(factor(year),Emissions/10^5)) +
+        geom_bar(stat="identity",fill="grey",width=0.75) +
+        theme_bw() +  guides(fill=FALSE) +
+        labs(x="year", y=expression("Total PM 2.5 Emission (10^5 Tons)")) + 
+        labs(title=expression("PM 2.5 Coal Combustion Source Emissions Across US from 1999-2008"))
 
 print(plot)
 
 ## Save as PNG
-dev.copy(png, file="plot3.png", height=480, width=480)
+dev.copy(png, file="plot4.png", height=480, width=480)
 dev.off()
